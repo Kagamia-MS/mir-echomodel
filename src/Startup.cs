@@ -88,7 +88,7 @@ namespace HelloWorldService
 
             logger.LogInformation(@"Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5
 Api:
-  GET /score?time=50&size=1024&chunk=1&statusCode=200&abort=1
+  GET /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0
   GET /kill?time=10000
   GET /trace
   GET /alloc?size=1024&count=1
@@ -115,9 +115,20 @@ Api:
             long.TryParse(context.Request.Query["size"].FirstOrDefault(), out long responseBodySize);
             bool isChunk = int.TryParse(context.Request.Query["chunk"].FirstOrDefault(), out int chunkVal) ? chunkVal != 0 : false;
             bool isAbort = int.TryParse(context.Request.Query["abort"].FirstOrDefault(), out int abortVal) ? abortVal != 0 : false;
+            bool isWaitRequest = int.TryParse(context.Request.Query["waitReq"].FirstOrDefault(), out int waitReqVal) ? waitReqVal != 0 : true; // by default we always wait request body
             var returnStatusCode = Enum.TryParse(context.Request.Query["statusCode"], out HttpStatusCode statusCodeVal) ? statusCodeVal : HttpStatusCode.OK;
 
             var cancellationToken = context.RequestAborted;
+
+            if (isWaitRequest && context.Request.Body != null)
+            {
+                byte[] buffer = new byte[8192];
+                while (await context.Request.Body.ReadAsync(buffer, 0, buffer.Length, cancellationToken) > 0)
+                {
+                    // ignore request body
+                }
+            }
+
             context.Response.StatusCode = (int)returnStatusCode;
 
             if (sleepMilliseconds > 0)
