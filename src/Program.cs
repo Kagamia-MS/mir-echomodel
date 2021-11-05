@@ -24,7 +24,7 @@ namespace HelloWorldService
                         .UseKestrel((ctx, options) =>
                         {
                             options.Limits.MaxRequestBodySize = null;
-                            if (ctx.Configuration.GetValue<bool>("useHTTP2", true))
+                            if (ctx.Configuration.GetValue<bool>("useHTTP2", false))
                             {
                                 string http2Endpoint = ctx.Configuration.GetValue<string>("http2Endpoint");
                                 options.ConfigureEndpointDefaults(listenOptions =>
