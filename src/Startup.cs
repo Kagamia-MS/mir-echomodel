@@ -86,13 +86,7 @@ namespace HelloWorldService
                 endpoints.Map("/alloc", this.HandleAlloc);
             });
 
-            logger.LogInformation(@"Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5
-Api:
-  GET /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0
-  GET /kill?time=10000
-  GET /trace
-  GET /alloc?size=1024&count=1
-  GET /healthz");
+            this.PrintHelp(logger);
         }
 
         public async Task HandleScoreSingleThread(HttpContext context)
@@ -117,6 +111,15 @@ Api:
             bool isAbort = int.TryParse(context.Request.Query["abort"].FirstOrDefault(), out int abortVal) ? abortVal != 0 : false;
             bool isWaitRequest = int.TryParse(context.Request.Query["waitReq"].FirstOrDefault(), out int waitReqVal) ? waitReqVal != 0 : true; // by default we always wait request body
             var returnStatusCode = Enum.TryParse(context.Request.Query["statusCode"], out HttpStatusCode statusCodeVal) ? statusCodeVal : HttpStatusCode.OK;
+            var appendHeaders = context.Request.Query["appendHeader"].Where(expr => !string.IsNullOrWhiteSpace(expr)).Select(expr =>
+            {
+                var kv = expr.Split(':', 2, StringSplitOptions.None);
+                return new
+                {
+                    name = kv.ElementAtOrDefault(0).Trim(),
+                    value = kv.ElementAtOrDefault(1)?.Trim() ?? "",
+                };
+            }).ToList();
 
             var cancellationToken = context.RequestAborted;
 
@@ -130,6 +133,13 @@ Api:
             }
 
             context.Response.StatusCode = (int)returnStatusCode;
+            if (appendHeaders.Count > 0)
+            {
+                foreach (var kv in appendHeaders)
+                {
+                    context.Response.Headers.Append(kv.name, kv.value);
+                }
+            }
 
             if (sleepMilliseconds > 0)
             {
@@ -160,7 +170,12 @@ Api:
             }
             else
             {
-                await context.Response.WriteAsync("OK!", cancellationToken);
+                const string defaultBodyStr = "OK!";
+                if (!isChunk)
+                {
+                    context.Response.GetTypedHeaders().ContentLength = defaultBodyStr.Length;
+                }
+                await context.Response.WriteAsync(defaultBodyStr, cancellationToken);
             }
 
             if (isAbort)
@@ -256,6 +271,18 @@ Api:
             {
                 await ctx.Response.WriteAsync($"  {kv.Key}: {kv.Value}\n", cancellationToken);
             }
+        }
+
+        private void PrintHelp(ILogger logger)
+        {
+            logger.LogInformation(@"version: v20211124-1
+Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5 --useHTTP2=true --http2Endpoint=0.0.0.0:5000
+Api:
+  GET,POST /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0&appendHeader=name:value
+  GET      /kill?time=10000
+  GET      /trace
+  GET      /alloc?size=1024&count=1
+  GET      /healthz");
         }
     }
 }
