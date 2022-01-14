@@ -13,6 +13,7 @@ namespace HelloWorldService
     {
         public static void Main(string[] args)
         {
+            PrintHelp();
             CreateHostBuilder(args).Build().Run();
         }
 
@@ -37,5 +38,26 @@ namespace HelloWorldService
                             }
                         });
                 });
+
+        private static void PrintHelp()
+        {
+            var helpText = new[]
+            {
+                "version: v20220114-1",
+                "Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5 --useHTTP2=true --http2Endpoint=0.0.0.0:5000",
+                "Api:",
+                "  GET,POST /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0&appendHeader=name:value",
+                "  GET      /kill?time=10000",
+                "  GET      /trace",
+                "  GET      /alloc?size=1024&count=1",
+                "  GET      /healthz"
+            };
+
+            foreach (var line in helpText)
+            {
+                Console.WriteLine(line);
+            }
+            Console.WriteLine();
+        }
     }
 }

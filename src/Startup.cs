@@ -85,8 +85,6 @@ namespace HelloWorldService
                 endpoints.Map("/healthz", ctx => this.Healthz(ctx, cts.Token));
                 endpoints.Map("/alloc", this.HandleAlloc);
             });
-
-            this.PrintHelp(logger);
         }
 
         public async Task HandleScoreSingleThread(HttpContext context)
@@ -271,18 +269,6 @@ namespace HelloWorldService
             {
                 await ctx.Response.WriteAsync($"  {kv.Key}: {kv.Value}\n", cancellationToken);
             }
-        }
-
-        private void PrintHelp(ILogger logger)
-        {
-            logger.LogInformation(@"version: v20211124-1
-Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5 --useHTTP2=true --http2Endpoint=0.0.0.0:5000
-Api:
-  GET,POST /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0&appendHeader=name:value
-  GET      /kill?time=10000
-  GET      /trace
-  GET      /alloc?size=1024&count=1
-  GET      /healthz");
         }
     }
 }
