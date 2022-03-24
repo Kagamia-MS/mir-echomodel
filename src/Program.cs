@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace HelloWorldService
@@ -37,6 +38,9 @@ namespace HelloWorldService
                                 });
                             }
                         });
+                }).ConfigureServices(services =>
+                {
+                    services.AddHostedService<SignalTrapper>();
                 });
 
         private static void PrintHelp()
