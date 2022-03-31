@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -14,8 +15,16 @@ namespace HelloWorldService
     {
         public static void Main(string[] args)
         {
-            PrintHelp();
-            CreateHostBuilder(args).Build().Run();
+            try
+            {
+                PrintHelp();
+                CreateHostBuilder(args).Build().Run();
+            }
+            catch(Exception ex)
+            {
+                WriteKubernetesErrorLog(ex);
+                throw;
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -47,7 +56,7 @@ namespace HelloWorldService
         {
             var helpText = new[]
             {
-                "version: v20220114-1",
+                "version: v20220331-1",
                 "Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5 --useHTTP2=true --http2Endpoint=0.0.0.0:5000",
                 "Api:",
                 "  GET,POST /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0&appendHeader=name:value",
@@ -62,6 +71,22 @@ namespace HelloWorldService
                 Console.WriteLine(line);
             }
             Console.WriteLine();
+        }
+
+        private static void WriteKubernetesErrorLog(Exception ex)
+        {
+            const string terminationLog = "/dev/termination-log";
+            try
+            {
+                if (File.Exists(terminationLog))
+                {
+                    File.AppendAllText(terminationLog, $"{ex.GetType().FullName}: {ex.Message}");
+                }
+            }
+            catch
+            {
+                // ignore any IO error
+            }
         }
     }
 }
