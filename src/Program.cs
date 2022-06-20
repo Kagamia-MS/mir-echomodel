@@ -56,13 +56,13 @@ namespace HelloWorldService
         {
             var helpText = new[]
             {
-                "version: v20220331-1",
+                "version: v20220610-1",
                 "Configurations:  --crash=true --oom=true --IsSingleThread=true --StartDelay=5 --useHTTP2=true --http2Endpoint=0.0.0.0:5000",
                 "Api:",
                 "  GET,POST /score?time=50&size=1024&chunk=1&statusCode=200&abort=1&waitReq=0&appendHeader=name:value",
                 "  GET      /kill?time=10000",
                 "  GET      /trace",
-                "  GET      /alloc?size=1024&count=1",
+                "  GET      /alloc?size=1024&count=1&free=1",
                 "  GET      /healthz"
             };
 
