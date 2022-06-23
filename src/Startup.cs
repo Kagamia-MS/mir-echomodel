@@ -104,7 +104,7 @@ namespace HelloWorldService
         public async Task HandleScore(HttpContext context)
         {
             int.TryParse(context.Request.Query["time"].FirstOrDefault(), out int sleepMilliseconds);
-            long.TryParse(context.Request.Query["size"].FirstOrDefault(), out long responseBodySize);
+            bool customizeBodySize = long.TryParse(context.Request.Query["size"].FirstOrDefault(), out long responseBodySize);
             bool isChunk = int.TryParse(context.Request.Query["chunk"].FirstOrDefault(), out int chunkVal) ? chunkVal != 0 : false;
             bool isAbort = int.TryParse(context.Request.Query["abort"].FirstOrDefault(), out int abortVal) ? abortVal != 0 : false;
             bool isWaitRequest = int.TryParse(context.Request.Query["waitReq"].FirstOrDefault(), out int waitReqVal) ? waitReqVal != 0 : true; // by default we always wait request body
@@ -165,6 +165,10 @@ namespace HelloWorldService
                     }
                     responseBodySize -= bufferLen;
                 }
+            }
+            else if (customizeBodySize) // empty response body
+            {
+                context.Response.ContentLength = 0;
             }
             else
             {
