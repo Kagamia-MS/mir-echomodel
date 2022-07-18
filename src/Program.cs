@@ -35,6 +35,8 @@ namespace HelloWorldService
                         .UseKestrel((ctx, options) =>
                         {
                             options.Limits.MaxRequestBodySize = null;
+                            // https://github.com/dotnet/aspnetcore/pull/34013
+                            options.AllowAlternateSchemes = true;
                             if (ctx.Configuration.GetValue<bool>("useHTTP2", false))
                             {
                                 string http2Endpoint = ctx.Configuration.GetValue<string>("http2Endpoint");
