@@ -42,8 +42,9 @@ namespace HelloWorldService
             bool isOOM = configuration.GetValue<bool>("oom", false);
             if (isOOM)
             {
-                logger.LogWarning("Alloc 1024GB memory!");
-                Alloc(1024 * 1024, 1024 * 1024, false, lifetime.ApplicationStopping);
+                long allocMemoryInBytes = configuration.GetValue<long>("allocOnStart", 1024L * 1024 * 1024 * 1024);
+                logger.LogWarning($"Alloc {allocMemoryInBytes:N0} bytes memory on start.");
+                Alloc(1024, allocMemoryInBytes / 1024, false, lifetime.ApplicationStopping);
                 return;
             }
 
@@ -200,12 +201,12 @@ namespace HelloWorldService
             await context.Response.WriteAsync("OK!", cancellationToken);
         }
 
-        private static void Alloc(int size, int count, bool freeAll, CancellationToken cancellationToken)
+        private static void Alloc(int size, long count, bool freeAll, CancellationToken cancellationToken)
         {
             IntPtr[] buf = new IntPtr[count];
             try
             {
-                for (int i = 0; i < count; i++)
+                for (long i = 0; i < count; i++)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -218,7 +219,7 @@ namespace HelloWorldService
             {
                 if (freeAll)
                 {
-                    for (int i = 0; i < count; i++)
+                    for (long i = 0; i < count; i++)
                     {
                         Marshal.FreeHGlobal(buf[i]);
                     }
