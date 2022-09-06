@@ -57,7 +57,6 @@ namespace HelloWorldService
             {
                 logger.LogWarning($"Alloc {allocMemoryInBytes:N0} bytes memory in {allocDuration} ms on start.");
                 Alloc(1024, allocMemoryInBytes / 1024, allocDuration, false, lifetime.ApplicationStopping);
-                return;
             }
 
             int startDelaySecods = configuration.GetValue<int>("StartDelay", 0);
