@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -40,11 +41,22 @@ namespace HelloWorldService
             }
 
             bool isOOM = configuration.GetValue<bool>("oom", false);
+            long allocMemoryInBytes;
+            int allocDuration;
             if (isOOM)
             {
-                long allocMemoryInBytes = configuration.GetValue<long>("allocOnStart", 1024L * 1024 * 1024 * 1024);
-                logger.LogWarning($"Alloc {allocMemoryInBytes:N0} bytes memory on start.");
-                Alloc(1024, allocMemoryInBytes / 1024, false, lifetime.ApplicationStopping);
+                allocMemoryInBytes = 1024L * 1024 * 1024 * 1024;
+                allocDuration = 0;
+            }
+            else
+            {
+                allocMemoryInBytes = configuration.GetValue<long>("allocOnStart:size", 0);
+                allocDuration = configuration.GetValue<int>("allocOnStart:duration", 0);
+            }
+            if (allocMemoryInBytes > 0)
+            {
+                logger.LogWarning($"Alloc {allocMemoryInBytes:N0} bytes memory in {allocDuration} ms on start.");
+                Alloc(1024, allocMemoryInBytes / 1024, allocDuration, false, lifetime.ApplicationStopping);
                 return;
             }
 
@@ -196,21 +208,41 @@ namespace HelloWorldService
             {
                 count = 1;
             }
+            int.TryParse(context.Request.Query["duration"].FirstOrDefault(), out int duration);
 
-            Alloc(size, count, isFree != 0, cancellationToken);
+            Alloc(size, count, duration, isFree != 0, cancellationToken);
             await context.Response.WriteAsync("OK!", cancellationToken);
         }
 
-        private static void Alloc(int size, long count, bool freeAll, CancellationToken cancellationToken)
+        private static void Alloc(int size, long count, bool freeAll, CancellationToken cancellationToken = default)
         {
+            Alloc(size, count, 0, freeAll, cancellationToken);
+        }
+
+        private static void Alloc(int size, long count, int durationMs, bool freeAll, CancellationToken cancellationToken = default)
+        {
+            if (size <= 0 || count <= 0)
+            {
+                return;
+            }
+
             IntPtr[] buf = new IntPtr[count];
+            var durationPerAlloc = (count > 1 && durationMs > 0) ? TimeSpan.FromMilliseconds(durationMs) / (count - 1) : TimeSpan.Zero;
             try
             {
+                var sw = Stopwatch.StartNew();
                 for (long i = 0; i < count; i++)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
                         break;
+                    }
+                    if (durationPerAlloc != TimeSpan.Zero)
+                    {
+                        while (sw.Elapsed < i * durationPerAlloc)
+                        {
+                            Thread.Sleep(1);
+                        }
                     }
                     buf[i] = Marshal.AllocHGlobal(size);
                 }
